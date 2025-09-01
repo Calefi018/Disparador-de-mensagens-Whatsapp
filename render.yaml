@@ -4,7 +4,7 @@ services:
     name: whatsapp-bot-web
     runtime: docker
     dockerfilePath: ./Dockerfile
-    plan: free # Comece com o plano gratuito, mude se precisar de mais performance
+    plan: free
     healthCheckPath: /
     envVars:
       - key: DATABASE_URL
