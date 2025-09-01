@@ -1,0 +1,36 @@
+# Use uma imagem base oficial do Python
+FROM python:3.11-slim
+
+# Define o diretório de trabalho dentro do container
+WORKDIR /app
+
+# Define variáveis de ambiente para evitar prompts interativos durante a instalação
+ENV DEBIAN_FRONTEND=noninteractive
+ENV CHROME_VERSION="114.0.5735.198-1" # Fixar versão para compatibilidade
+ENV CHROMEDRIVER_VERSION="114.0.5735.90" # Versão do driver compatível
+
+# Atualiza os pacotes e instala as dependências do Chrome e do chromedriver
+RUN apt-get update && apt-get install -y \
+    wget \
+    unzip \
+    --no-install-recommends \
+    && wget -q https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${CHROME_VERSION}_amd64.deb \
+    && apt-get install -y ./google-chrome-stable_${CHROME_VERSION}_amd64.deb \
+    && rm google-chrome-stable_${CHROME_VERSION}_amd64.deb \
+    && wget -q https://storage.googleapis.com/chrome-for-testing-public/${CHROMEDRIVER_VERSION}/linux64/chromedriver-linux64.zip \
+    && unzip chromedriver-linux64.zip \
+    && mv chromedriver-linux64/chromedriver /usr/local/bin/ \
+    && rm chromedriver-linux64.zip \
+    && apt-get purge -y wget unzip \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copia o arquivo de requerimentos e instala as dependências do Python
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copia o resto do código da aplicação para o container
+COPY . .
+
+# Expõe a porta que o Gunicorn usará (o Render usa a 10000 por padrão)
+EXPOSE 10000

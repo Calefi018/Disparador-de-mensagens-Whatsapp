@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Disparador de WhatsApp</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .container { max-width: 960px; }
+    </style>
+</head>
+<body>
+    <div class="container my-5">
+        <div class="text-center mb-4">
+            <h1>Disparador de Mensagens</h1>
+            <p class="lead">Uma ferramenta para envios em massa via WhatsApp Web.</p>
+        </div>
+
+        <div id="status" class="alert mt-4 d-none" role="alert"></div>
+
+        <div class="row g-5">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">🚀 Iniciar Campanha</h5>
+                        <div class="mb-3">
+                            <label for="numeros" class="form-label">Cole a lista de números (um por linha)</label>
+                            <textarea class="form-control" id="numeros" rows="8" placeholder="+5547999998888&#10;+5547988887777"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="mensagem-salva" class="form-label">Selecione a Mensagem</label>
+                            <select id="mensagem-salva" class="form-select">
+                                {% if mensagens %}
+                                    {% for msg in mensagens %}
+                                        <option value="{{ msg.id }}">{{ msg.titulo }}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option disabled selected>Nenhuma mensagem salva ainda</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="intervalo" class="form-label">Intervalo entre envios (segundos)</label>
+                            <input type="number" class="form-control" id="intervalo" value="8" min="5">
+                        </div>
+                        <button class="btn btn-primary w-100" onclick="iniciarCampanha()">Iniciar Envio</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">💾 Salvar Nova Mensagem</h5>
+                        <div class="mb-3">
+                            <label for="titulo-msg" class="form-label">Título da Mensagem</label>
+                            <input type="text" id="titulo-msg" class="form-control" placeholder="Ex: Campanha de Setembro">
+                        </div>
+                        <div class="mb-3">
+                            <label for="texto-msg" class="form-label">Texto da Mensagem</label>
+                            <textarea id="texto-msg" class="form-control" rows="5" placeholder="Olá! Esta é uma mensagem de teste."></textarea>
+                        </div>
+                        <button class="btn btn-success w-100" onclick="salvarMensagem()">Salvar Mensagem</e-button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+
+        function showAlert(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = `alert alert-${type}`;
+            statusDiv.classList.remove('d-none');
+            setTimeout(() => statusDiv.classList.add('d-none'), 5000);
+        }
+
+        async function iniciarCampanha() {
+            const data = {
+                numeros: document.getElementById('numeros').value,
+                id_mensagem: document.getElementById('mensagem-salva').value,
+                intervalo: document.getElementById('intervalo').value
+            };
+
+            if (!data.numeros || !data.id_mensagem) {
+                showAlert('Por favor, preencha a lista de números e selecione uma mensagem.', 'warning');
+                return;
+            }
+
+            const response = await fetch('/enviar-campanha', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            showAlert(result.mensagem, response.ok ? 'success' : 'danger');
+        }
+
+        async function salvarMensagem() {
+            const data = {
+                titulo: document.getElementById('titulo-msg').value,
+                texto: document.getElementById('texto-msg').value,
+            };
+
+             if (!data.titulo || !data.texto) {
+                showAlert('Por favor, preencha o título e o texto da mensagem.', 'warning');
+                return;
+            }
+
+            const response = await fetch('/salvar-mensagem', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            showAlert(result.mensagem, response.ok ? 'success' : 'danger');
+            
+            if (response.ok) {
+                setTimeout(() => window.location.reload(), 1500);
+            }
+        }
+    </script>
+</body>
+</html>

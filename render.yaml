@@ -1,0 +1,55 @@
+services:
+  # Serviço Web (Flask/Gunicorn)
+  - type: web
+    name: whatsapp-bot-web
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free # Comece com o plano gratuito, mude se precisar de mais performance
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bot-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: bot-redis
+          property: connectionString
+      - key: PYTHON_VERSION
+        value: 3.11.5
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "flask create-db && gunicorn app:app"
+
+  # Worker em Segundo Plano (Celery/Selenium)
+  - type: worker
+    name: whatsapp-bot-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bot-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: bot-redis
+          property: connectionString
+    startCommand: "celery -A worker.celery worker --loglevel=info"
+    disks:
+      - name: chrome-session-disk
+        mountPath: /var/data
+        sizeGB: 1
+
+# Banco de Dados PostgreSQL
+databases:
+  - name: bot-db
+    plan: free
+
+# Serviço de Cache/Fila Redis
+addons:
+  - type: redis
+    name: bot-redis
+    plan: free
